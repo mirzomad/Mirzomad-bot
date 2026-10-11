@@ -13,50 +13,43 @@ app = Flask(__name__)
 def home():
     return "Mirzomad AI Live!"
 
-SYSTEM_PROMPT = "Ту Mirzomad AI, сохтаи Мирзомад. Бо тоҷикии фаҳмо, адабӣ, кӯтоҳ ва боадабона ҷавоб деҳ."
+SYSTEM_PROMPT = "Ту Mirzomad AI, сохтаи Мирзомад Мирзомадзода. Бо тоҷикии фаҳмо ва боадабона ҷавоб деҳ."
 
 @bot.message_handler(commands=['start'])
 def start(m):
-    bot.reply_to(m, "Салом акаҷон! 🙏 Омодаам!")
+    bot.reply_to(m, "Салом акаҷон! 🙏 Ман кор мекунам!")
 
 @bot.message_handler(content_types=['text'])
 def chat(m):
     try:
         if m.text.startswith('/'): return
-        # Модели аз ҳама устувор
+        # МОДЕЛИ НАВИ ДУРУСТ
         r = client.chat.completions.create(
-            model="llama-3.1-8b-instant", # Ин модел ҳеҷ гоҳ банд намешавад!
+            model="llama-3.3-70b-versatile",
             messages=[
                 {"role":"system","content":SYSTEM_PROMPT},
                 {"role":"user","content":m.text}
-            ]
+            ],
+            temperature=0.6,
+            max_tokens=600
         )
         bot.reply_to(m, r.choices[0].message.content)
     except Exception as e:
-        # Ҳамин ҷо хатои аслиро мебинем!
-        bot.reply_to(m, f"Хатои Groq: {str(e)[:300]}")
+        bot.reply_to(m, f"Хато: {e}")
 
 @bot.message_handler(content_types=['photo'])
 def photo(m):
-    bot.reply_to(m, "Акаҷон, аксро гирифтам! 🙏 Ҳозир калиди Groq нав карда истодаед, баъди он аксро ҳам таҳлил мекунам. Лутфан ҳозир бо матн нависед!")
+    bot.reply_to(m, "Акаҷон аксро гирифтам! Ҳозир матн кор мекунад, баъди он аксро ҳам дуруст мекунем!")
 
-def keep_alive():
-    while True:
-        time.sleep(300)
-        try: requests.get(os.environ.get("RENDER_EXTERNAL_URL",""))
-        except: pass
-
+# Барои 409 Conflict - танҳо як бор polling
 def run_bot():
-    while True:
-        try:
-            bot.remove_webhook()
-            bot.infinity_polling(timeout=90)
-        except: time.sleep(5)
+    bot.remove_webhook()
+    time.sleep(3)
+    bot.infinity_polling(skip_pending=True, timeout=90, long_polling_timeout=60)
 
 def run_flask():
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
 
 if __name__ == "__main__":
     threading.Thread(target=run_flask, daemon=True).start()
-    threading.Thread(target=keep_alive, daemon=True).start()
     run_bot()
