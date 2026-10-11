@@ -1,4 +1,3 @@
-import os
 import telebot
 from groq import Groq
 from flask import Flask
@@ -42,5 +41,4 @@ def run_flask():
     app.run(host="0.0.0.0", port=port)
 
 if __name__ == "__main__":
-    threading.Thread(target=run_flask, daemon=True).start()
-    run_bot()
+    threading.Thread(target=ru
