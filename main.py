@@ -17,17 +17,17 @@ app = Flask(__name__)
 def home():
     return "Bot is Live!"
 
-@bot.message_handler(commands=['start', 'help'])
+@bot.message_handler(commands=['start','help'])
 def welcome(message):
-    bot.reply_to(message, "Салом ака! Ман Mirzomad AI!")
+    bot.reply_to(message, "Салом ака! Ман Mirzomad AI! 🙏")
 
 @bot.message_handler(func=lambda m: True)
 def chat(message):
     try:
         r = client.chat.completions.create(
-            model="llama-3.1-8b-instant",
+            model="openai/gpt-oss-20b",
             messages=[
-                {"role": "system", "content": "Ту ёрдамчии тоҷикӣ ҳастӣ."},
+                {"role": "system", "content": "Ту ёрдамчии тоҷикӣ, хушмуомила ҳастӣ."},
                 {"role": "user", "content": message.text}
             ]
         )
@@ -45,7 +45,5 @@ def run_flask():
     app.run(host="0.0.0.0", port=port)
 
 if __name__ == "__main__":
-    t = threading.Thread(target=run_flask)
-    t.daemon = True
-    t.start()
+    threading.Thread(target=run_flask, daemon=True).start()
     run_bot()
