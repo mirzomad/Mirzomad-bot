@@ -1,4 +1,3 @@
-import os
 import time
 import telebot
 from groq import Groq
@@ -39,4 +38,4 @@ if __name__ == "__main__":
     time.sleep(2)
     Thread(target=run).start()
     bot.infinity_polling()
-    
+
