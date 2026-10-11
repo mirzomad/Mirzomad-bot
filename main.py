@@ -1,15 +1,14 @@
 import os
 import time
 import telebot
-import google.generativeai as genai
+from groq import Groq
 from flask import Flask
 from threading import Thread
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
 
-genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel('gemini-1.5-flash')
+client = Groq(api_key=GROQ_API_KEY)
 bot = telebot.TeleBot(BOT_TOKEN, threaded=False)
 app = Flask(__name__)
 
@@ -24,8 +23,14 @@ def run():
 def handle_message(message):
     try:
         bot.send_chat_action(message.chat.id, 'typing')
-        response = model.generate_content(message.text)
-        bot.reply_to(message, response.text)
+        completion = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "system", "content": "Ту ёрдамчии тоҷик ҳастӣ. Ҳамеша бо забони тоҷикӣ ҷавоб деҳ. Номат Мирзомад."},
+                {"role": "user", "content": message.text}
+            ]
+        )
+        bot.reply_to(message, completion.choices[0].message.content)
     except Exception as e:
         bot.reply_to(message, f"Хато: {e}")
 
