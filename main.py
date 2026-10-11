@@ -1,4 +1,5 @@
 import os
+import time
 import telebot
 import google.generativeai as genai
 from flask import Flask
@@ -9,7 +10,7 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
 genai.configure(api_key=GEMINI_API_KEY)
 model = genai.GenerativeModel('gemini-1.5-flash')
-bot = telebot.TeleBot(BOT_TOKEN)
+bot = telebot.TeleBot(BOT_TOKEN, threaded=False)
 app = Flask(__name__)
 
 @app.route('/')
@@ -26,7 +27,10 @@ def handle_message(message):
         response = model.generate_content(message.text)
         bot.reply_to(message, response.text)
     except Exception as e:
-        bot.reply_to(message, f"Хато шуд: {e}")
+        bot.reply_to(message, f"Хато: {e}")
 
-Thread(target=run).start()
-bot.infinity_polling()
+if __name__ == "__main__":
+    bot.remove_webhook()
+    time.sleep(2)
+    Thread(target=run).start()
+    bot.infinity_polling()
