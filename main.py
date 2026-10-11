@@ -1,10 +1,11 @@
 import os
 import telebot
 import tempfile
-from groq import Groq
-from flask import Flask
 import threading
 import time
+import requests
+from groq import Groq
+from flask import Flask
 
 # Калидҳо аз Render
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
@@ -17,39 +18,33 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return "Mirzomad AI is Live! Tajik Assistant"
+    return "Mirzomad AI is Live 24/7!"
 
-# ================= ПРОМТИ ҚАВӢ, АДАБӢ ВА НАРМ =================
+# ================= ПРОМТИ АДАБӢ, НАРМ ВА ҚАВӢ =================
 SYSTEM_PROMPT = """
 Ту Mirzomad AI ҳастӣ — ёрдамчии ҳушманди тоҷикӣ.
 
 Муаррифӣ:
 - Туро барномасоз Мирзомад Мирзомадзода аз Тоҷикистон офаридааст.
 - Ту ҳеҷ гоҳ худро ChatGPT, OpenAI, Meta AI ё ягон ширкати дигар наном. Ту танҳо Mirzomad AI ҳастӣ.
-- Агар касе пурсад "Ту киро сохт? Ту кӣ ҳастӣ?", бигӯ: "Ман Mirzomad AI ҳастам, маро дӯстам Мирзомад сохт, то ба мардуми тоҷик ёрдам диҳам."
+- Агар касе пурсад "Ту киро сохт?", бигӯ: "Маро дӯстам Мирзомад сохт, то ба мардуми тоҷик ёрдам диҳам."
 
 Услуби сухан:
 - Забони ту тоҷикии адабӣ, нарм, гарм ва боэҳтиром аст.
-- Бо ҳар як корбар бо меҳрубонии бародарӣ сухан гӯй. Калимаҳои "ака", "хоҳар", "бародар", "акаҷон" -ро бо эҳтиром истифода бар.
-- Ҷавобҳои ту кӯтоҳ, равшан ва пурмаъно бошанд. Аз навиштани матнҳои дароз ва дилгиркунанда худдорӣ кун.
-- Ҳеҷ гоҳ дағал, хушк ё беэҳтиромона ҷавоб надеҳ.
-- Агар чизеро нафаҳмӣ, бо нармӣ бигӯ: "Бубахшед акаҷон, инро дубора шарҳ медиҳед?"
-- Ҳамеша мусбат, умедбахш ва ёрдамдиҳанда бош.
+- Бо ҳар як корбар бо меҳрубонии бародарӣ сухан гӯй. Калимаҳои "ака", "акаҷон", "хоҳар", "бародар" -ро бо эҳтиром истифода бар.
+- Ҷавобҳои ту кӯтоҳ, равшан ва пурмаъно бошанд.
+- Ҳеҷ гоҳ дағал ё беэҳтиромона ҷавоб надеҳ.
 
-Қоидаҳои муҳим:
-1. Ҳамеша ба тоҷикӣ ҷавоб деҳ, магар корбар забони дигар хоҳад.
-2. Дин, сиёсат ва баҳсҳои нолозимро оғоз макун.
-3. Маълумоти шахсиро напурс.
-4. Ҳамеша ростқавл бош.
-5. Агар касе бо овоз паём фиристад, аввал бигӯ: "Овозатонро бо шукрона шунидам акаҷон" ва сипас ҷавоб деҳ.
-
-Мақсади ту: Дилу дидаи ҳар тоҷикро бо сухани нарм шод кардан.
+Қоидаҳо:
+1. Ҳамеша ба тоҷикӣ ҷавоб деҳ.
+2. Агар бо овоз паём ояд, бигӯ: "Овозатонро бо шукрона шунидам акаҷон".
+3. Ҳадафи ту шод кардани дили ҳар тоҷик аст.
 """
 # ============================================================
 
 @bot.message_handler(commands=['start', 'help'])
 def welcome(message):
-    bot.reply_to(message, "Салом акаҷон! 🙏 Ман Mirzomad AI ҳастам.\n\nМан бо матн ва бо овоз гап мезанам. Чӣ ёрдам диҳам?")
+    bot.reply_to(message, "Салом акаҷон! 🙏 Ман Mirzomad AI ҳастам.\n\nМан 24 соат бедор ҳастам! Бо матн ва овоз гап мезанам. Чӣ ёрдам диҳам?")
 
 @bot.message_handler(content_types=['text'])
 def chat_text(message):
@@ -82,7 +77,6 @@ def chat_voice(message):
                 model="whisper-large-v3-turbo",
                 language="tg"
             )
-
         user_text = transcription.text
         os.remove(tmp_path)
 
@@ -94,14 +88,29 @@ def chat_voice(message):
             ]
         )
         bot.reply_to(message, f"Шумо гуфтед: '{user_text}'\n\n{response.choices[0].message.content}")
-
     except Exception as e:
         bot.reply_to(message, f"Овозро нафаҳмидам акаҷон: {e}")
 
+# ====== БОТРО ҲЕҶ ГОҲ ХОМӮШ НАМЕГУЗОРАД ======
+def keep_alive():
+    while True:
+        time.sleep(240) # ҳар 4 дақиқа худашро бедор мекунад
+        try:
+            url = os.environ.get("RENDER_EXTERNAL_URL") or "https://mirzomad-bot.onrender.com"
+            requests.get(url)
+            print("Бедор мондам!")
+        except:
+            pass
+
 def run_bot():
-    bot.remove_webhook()
-    time.sleep(2)
-    bot.infinity_polling(skip_pending=True, allowed_updates=["message"])
+    while True:
+        try:
+            bot.remove_webhook()
+            time.sleep(2)
+            bot.infinity_polling(skip_pending=True, timeout=60, long_polling_timeout=60)
+        except Exception as e:
+            print(f"Бот хомӯш шуд, аз нав روشن мекунам: {e}")
+            time.sleep(5)
 
 def run_flask():
     port = int(os.environ.get("PORT", 10000))
@@ -109,4 +118,5 @@ def run_flask():
 
 if __name__ == "__main__":
     threading.Thread(target=run_flask, daemon=True).start()
+    threading.Thread(target=keep_alive, daemon=True).start()
     run_bot()
