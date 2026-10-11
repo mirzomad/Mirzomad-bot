@@ -1,41 +1,46 @@
-import time
+import os
 import telebot
 from groq import Groq
 from flask import Flask
-from threading import Thread
+import threading
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
 
+bot = telebot.TeleBot(BOT_TOKEN)
 client = Groq(api_key=GROQ_API_KEY)
-bot = telebot.TeleBot(BOT_TOKEN, threaded=False)
+
 app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return "Bot is alive!"
+    return "Bot is Live!"
 
-def run():
-    app.run(host='0.0.0.0', port=10000)
+@bot.message_handler(commands=['start', 'help'])
+def welcome(message):
+    bot.reply_to(message, "Салом ака! Савол диҳед!")
 
 @bot.message_handler(func=lambda m: True)
-def handle_message(message):
+def chat(message):
     try:
-        bot.send_chat_action(message.chat.id, 'typing')
-        completion = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+        resp = client.chat.completions.create(
+            model="llama-3.1-8b-instant",
             messages=[
-                {"role": "system", "content": "Ту ёрдамчии тоҷик ҳастӣ. Ҳамеша бо забони тоҷикӣ ҷавоб деҳ. Номат Мирзомад."},
+                {"role": "system", "content": "Ту ёрдамчии тоҷикӣ ҳастӣ."},
                 {"role": "user", "content": message.text}
             ]
         )
-        bot.reply_to(message, completion.choices[0].message.content)
+        bot.reply_to(message, resp.choices[0].message.content)
     except Exception as e:
         bot.reply_to(message, f"Хато: {e}")
 
-if __name__ == "__main__":
-    bot.remove_webhook()
-    time.sleep(2)
-    Thread(target=run).start()
+def run_bot():
     bot.infinity_polling()
 
+def run_flask():
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
+
+if __name__ == "__main__":
+    threading.Thread(target=run_flask, daemon=True).start()
+    run_bot()
